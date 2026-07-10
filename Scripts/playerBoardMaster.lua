@@ -108,16 +108,16 @@ local characterData = {
         },
     },
     ["Flare"]     = {
-    icon         = gitLink("Characters/Flare/Flare_icon.png"),
+    icon         = gitLink("Characters/Flare/Flare_icon.webp"),
     sourceGame   = "Base Game",
     layoutType   = "Base",
     playerBoard  = {
-        frontURL   = gitLink("Characters/Flate/Flare_figure.png"),
+        frontURL = gitLink("Characters/Flare/Flare_playerBoard.png"),
         backURL  = "",
         edgeColour = {r=199, g=206, b=120}
         },
     figure       = { 
-        frontURL   = "https://hackclad.wiki.gg/images/Flare_Portrait.png",
+        frontURL = gitLink("Characters/Flare/Flare_figure.png"),
         backURL    = "",
         baseColour = {r=210, g=225, b=45}
         },
@@ -157,12 +157,12 @@ local characterData = {
     sourceGame   = "Base Game",
     layoutType   = "Base",
     playerBoard  = {
-        frontURL   = gitLink("Characters/Luna/Luna_figure.png"),
+        frontURL = gitLink("Characters/Luna/Luna_playerBoard.png"),
         backURL  = "",
         edgeColour = {r=151, g=122, b=200}
         },
     figure       = { 
-        frontURL   = "https://hackclad.wiki.gg/images/Luna_Portrait.png",
+        frontURL = gitLink("Characters/Luna/Luna_figure.png"),
         backURL    = "",
         baseColour = {r=145, g=25, b=220}
         },
@@ -202,12 +202,12 @@ local characterData = {
     sourceGame   = "Base Game",
     layoutType   = "Base",
     playerBoard  = {
-        frontURL   = gitLink("Characters/Mia/Mia_figure.png"),
+        frontURL = gitLink("Characters/Mia/Mia_playerBoard.png"),
         backURL  = "",
         edgeColour = {r=144, g=156, b=130}
         },
     figure       = { 
-        frontURL   = "https://hackclad.wiki.gg/images/Mia_Portrait.png",
+        frontURL = gitLink("Characters/Mia/Mia_figure.png"),
         backURL    = "",
         baseColour = {r=255, g=125, b=25}
         },
@@ -247,12 +247,12 @@ local characterData = {
     sourceGame   = "Base Game",
     layoutType   = "Base",
     playerBoard  = {
-        frontURL   = gitLink("Characters/Amelia/Amelia_figure.png"),
+        frontURL = gitLink("Characters/Amelia/Amelia_playerBoard.png"),
         backURL  = "",
         edgeColour = {r=117, g=169, b=199}
         },
     figure       = { 
-        frontURL   = "https://hackclad.wiki.gg/images/Amelia_Portrait.png",
+        frontURL = gitLink("Characters/Amelia/Amelia_figure.png"),
         backURL    = "",
         baseColour = {r=80, g=180, b=255}
         },
@@ -288,11 +288,11 @@ local characterData = {
         }
     },        
     ["Croy"]      = {
-    icon         = gitLink("Characters/Croy/Croy_icon.png"),
+    icon         = gitLink("Characters/Croy/Croy_icon.webp"),
     sourceGame   = "CROSS FATE",
     layoutType   = "Base",
     playerBoard  = {
-        frontURL   = gitLink("Characters/Croy/Croy_figure.png"),
+        frontURL = gitLink("Characters/Croy/Croy_playerBoard.png"),
         backURL  = "",
         edgeColour = {r=169, g=168, b=165},
         additionalSnapPoints = {
@@ -301,7 +301,7 @@ local characterData = {
             }
         },
     figure       = { 
-        frontURL   = "https://hackclad.wiki.gg/images/Croy_Portrait.png",
+        frontURL = gitLink("Characters/Croy/Croy_figure.png"),
         backURL    = "",
         baseColour = {r=40, g=0, b=90}
         },
@@ -399,7 +399,7 @@ local characterData = {
     sourceGame   = "CROSS FATE",
     layoutType   = "Base",
     playerBoard  = {
-        frontURL   = gitLink("Characters/Lov/Lov_figure.png"),
+        frontURL = gitLink("Characters/Lov/Lov_playerBoard.png"),
         backURL  = "",
         edgeColour = {r=190, g=181, b=164},
         additionalSnapPoints = {
@@ -407,7 +407,7 @@ local characterData = {
             }
         },
     figure       = { 
-        frontURL   = "https://hackclad.wiki.gg/images/Lov_Portrait.png",
+        frontURL = gitLink("Characters/Lov/Lov_figure.png"),
         backURL    = "",
         baseColour = {r=235, g=235, b=200}
         },
