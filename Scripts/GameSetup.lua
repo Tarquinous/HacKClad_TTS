@@ -18,8 +18,8 @@ local xmlSwitches = {
     mode_default = {
         type = "mode",
         state = true,
-        imageEnabled  = gitLink("/UI/Gamemode_Default_Enabled.png"),
-        imageDisabled = gitLink("/UI/Gamemode_Default_Disabled.png"),
+        imageEnabled  = gitLink("/UI/Gamemode_Versus_Enabled.png"),
+        imageDisabled = gitLink("/UI/Gamemode_Versus_Disabled.png"),
         },
     mode_coop = {
         type = "mode",
@@ -30,14 +30,14 @@ local xmlSwitches = {
     setup_auto = {
         type = "setup",
         state = true,
-        imageEnabled  = gitLink("/UI/Gamemode_Default_Enabled.png"),
-        imageDisabled = gitLink("/UI/Gamemode_Default_Disabled.png"),
+        imageEnabled  = gitLink("/UI/Gamemode_Auto_Enabled.png"),
+        imageDisabled = gitLink("/UI/Gamemode_Auto_Disabled.png"),
         },
     setup_manual = {
         type = "setup",
         state = false,
-        imageEnabled  = gitLink("/UI/Gamemode_Coop_Enabled.png"),
-        imageDisabled = gitLink("/UI/Gamemode_Coop_Disabled.png"),
+        imageEnabled  = gitLink("/UI/Gamemode_Manual_Enabled.png"),
+        imageDisabled = gitLink("/UI/Gamemode_Manual_Disabled.png"),
         }
 }
 local messageColors = Global.getTable("messageColors")
@@ -157,6 +157,20 @@ function generateButtons()
                 buttonWidth  = 2
                 })
         )
+        
+        -- Secondary cache images are added to ensure players load in every image
+        table.insert(
+            menuTiles,
+            createXMLCache({
+                iconImage    = xmlSwitch.imageEnabled
+            })
+        table.insert(
+            menuTiles,
+            createXMLCache({
+                iconImage    = xmlSwitch.imageDisabled
+            })
+        )
+        
     end
     
     
@@ -242,6 +256,34 @@ function createXMLButton(args)
     return XMLTile
 end
 
+function createXMLCache(args)
+    -- The args table includes the following:
+    --   charSelect
+    --   iconImage
+
+    --[=[ Generate the XML image.
+          A LOT of garbage math because the Lua buttons and XML images do not use the same scales.
+          In-game the buttons may appear slightly smaller, this is because TTS has a small, invisible,
+          FIXED SIZE padding around the buttons. This scales the image to the clickable size of the button
+          as opposed to the visible size. --]=]
+    local XMLTile = {
+        tag = "Image",
+        attributes = {
+            id            = args.iconImage .. "-cache",
+            image         = args.iconImage or "",
+            active        = true,
+            height        = 0,
+            width         = 0,
+            position      = {x=0, y=0, z=0},
+            rotation      = "0 0 0",
+            raycastTarget = false,
+            visibility    = "Red|Blue|Yellow|Green|Orange|Purple|White|Teal|Pink|Brown|Black|Grey"
+      }}
+    
+    return XMLTile
+end
+
+
 function createGridButton(args)
     args.boardObj.createButton({
         label          = args.label,
@@ -297,7 +339,6 @@ end
 
 -- SETUP FUNCTIONS
 function beginGameSetup()
-    print("Test")
     local buttonObj = nil
     local gameSettings = {
         mode = 1,

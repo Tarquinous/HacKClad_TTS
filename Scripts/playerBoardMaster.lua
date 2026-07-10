@@ -108,7 +108,7 @@ local characterData = {
         },
     },
     ["Flare"]     = {
-    icon         = gitLink("Characters/Flare/Flare_icon.webp"),
+    icon         = gitLink("Characters/Flare/Flare_icon.png"),
     sourceGame   = "Base Game",
     layoutType   = "Base",
     playerBoard  = {
@@ -288,7 +288,7 @@ local characterData = {
         }
     },        
     ["Croy"]      = {
-    icon         = gitLink("Characters/Croy/Croy_icon.webp"),
+    icon         = gitLink("Characters/Croy/Croy_icon.png"),
     sourceGame   = "CROSS FATE",
     layoutType   = "Base",
     playerBoard  = {

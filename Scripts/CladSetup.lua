@@ -1,7 +1,47 @@
+-- UTILITY FUNCTIONS
+function deepcopy(orig)
+    return Global.call("deepcopy", orig)
+end
+
+function printDebug(message)
+    if Global.call("isDebug") then
+        print(message)
+    end
+end
+
+function snapPointHasTag(snapPoint, checkTerm)
+    if snapPoint == nil then return false end
+    if snapPoint.tags == nil then return false end
+    
+    local checkFound = false
+    for _, tag in ipairs(snapPoint.tags) do
+        if tag == checkTerm then checkFound = true end
+    end
+    return checkFound
+end
+
+function getBoardSnapPointPosition(boardObj, snapPointName)
+    local boardSnapPoint = nil
+    local boardRotation = boardObj.getRotation()
+    printDebug("Board rotation: " .. boardRotation.x .. ", " .. boardRotation.y .. ", " .. boardRotation.z .. ", ")
+
+    for _, snapPoint in ipairs(boardObj.getSnapPoints()) do
+        if snapPointHasTag(snapPoint, snapPointName) then
+            boardSnapPoint = snapPoint
+        end
+    end
+    if boardSnapPoint ~= nil then
+        return boardObj.positionToWorld(Vector(boardSnapPoint.position))
+    end
+end
+
 function gitLink(fileDirectory)
     return Global.call("gitLink", fileDirectory)
 end
 
+
+
+-- VARIABLES
 local btnScale  = 1300
 local btnMargin = 5   -- Percentage
 
@@ -65,7 +105,7 @@ local cladData = {
     ["Shell Clad"] = {
     sourceGame = "CROSS FATE",
     modelIndex = 2,
-    icon = "https://hackclad.wiki.gg/images/thumb/Shell_Clad_Icon.png/80px-Shell_Clad_Icon.png",
+    icon = gitLink("Clad/Shell/Shell_icon.png"),
     deck = {
         faceURL       = gitLink("Clad/Shell/Shell_cladCards.webp"),
         backURL       = gitLink("Clad/Shell/Shell_cardBack.jpg"),
@@ -96,7 +136,7 @@ local cladData = {
     ["Hydra Clad"] = {
     sourceGame = "HacKClaD.DeltA",
     modelIndex = 1,
-    icon = "https://hackclad.wiki.gg/images/thumb/Hydra_Clad_Icon.png/80px-Hydra_Clad_Icon.png",
+    icon = gitLink("Clad/Hydra/Hydra_icon.png"),
     deck = {
         faceURL       = gitLink("Clad/Hydra/Hydra_cladCards.webp"),
         backURL       = gitLink("Clad/Hydra/Hydra_cardBack.png"),
@@ -235,708 +275,7 @@ local positionLayout  = {
     ["Random_Clad"]        = {x = -0.5, y = 0, z = -1.5},
     ["Clear_Clad"]         = {x =  0.5, y = 0, z = -1.5},
 }
-local tokenColours    = {
-    Injury = {r=255, g=0,   b=0,   a=230},
-    MP     = {r=12,  g=93,  b=200, a=230},
-    CP     = {r=195, g=195, b=35,  a=230},
-}
-local templateObjects = {
-    Deck = {
-    GUID = nil,
-    Name = "Deck",
-    Transform = {
-        posX = 0,
-        posY = 0,
-        posZ = 0,
-        rotX = 0,
-        rotY = 0,
-        rotZ = 0,
-        scaleX = 1.5,
-        scaleY = 1.5,
-        scaleZ = 1.5,
-      },
-    Nickname     = "",
-    Description  = "",
-    GMNotes      = "",
-    Tags         = {},
-    AltLookAngle = {
-        x = 0.0,
-        y = 0.0,
-        z = 0.0
-    },
-    ColorDiffuse = {
-        r = 0.0,
-        g = 0.0,
-        b = 0.0
-    },
-    LayoutGroupSortIndex = 0,
-    Value        = 0,
-    Locked       = false,
-    Grid         = true,
-    Snap         = true,
-    IgnoreFoW    = false,
-    MeasureMovement = false,
-    DragSelectable = true,
-    Autoraise    = true,
-    Sticky       = true,
-    Tooltip      = true,
-    GridProjection = false,
-    HideWhenFaceDown = true,
-    Hands        = false,
-    SidewaysCard = false,
-    DeckIDs      = {},
-    CustomDeck   = {},
-    LuaScript    = "",
-    LuaScriptState = "",
-    XmlUI        = "",
-    ContainedObjects = {},
-    },
-    Board = {
-    GUID           = nil,
-    Name           = "Custom_Tile",
-    Transform      = {
-        posX   = 0,
-        posY   = 0,
-        posZ   = 0,
-        rotX   = 0,
-        rotY   = 0,
-        rotZ   = 0,
-        scaleX = 6.473,
-        scaleY = 1.0,
-        scaleZ = 4.577,
-      },
-    Nickname       = "",
-    Description    = "",
-    GMNotes        = "",
-    Tags           = {},
-    AltLookAngle   = {
-        x = 0.0,
-        y = 0.0,
-        z = 0.0
-    },
-    ColorDiffuse   = {
-        r = 1.0,
-        g = 1.0,
-        b = 1.0
-    },
-    LayoutGroupSortIndex = 0,
-    Value          = 0,
-    Locked         = false,
-    Grid           = true,
-    Snap           = true,
-    IgnoreFoW      = false,
-    MeasureMovement  = false,
-    DragSelectable = true,
-    Autoraise      = true,
-    Sticky         = true,
-    Tooltip        = true,
-    GridProjection = false,
-    HideWhenFaceDown  = false,
-    Hands          = false,
-    CustomImage    = {
-        ImageURL          = "",
-        ImageSecondaryURL = "",
-        ImageScalar       = 1.0,
-        WidthScale        = 0.0,
-        CustomTile        = {
-            Type      = 3,
-            Thickness = 0.1,
-            Stackable = false,
-            Stretch   = false
-        }
-    },
-    LuaScript      = "",
-    LuaScriptState = "",
-    XmlUI          = "",
-    AttachedSnapPoints = {}
-    },
-    Figure = {
-    GUID           = nil,
-    Name           = "Figurine_Custom",
-    Transform      = {
-        posX   = 0,
-        posY   = 0,
-        posZ   = 0,
-        rotX   = 0,
-        rotY   = 0,
-        rotZ   = 0,
-        scaleX = 0.8,
-        scaleY = 0.8,
-        scaleZ = 0.8,
-      },
-    Nickname       = "",
-    Description    = "",
-    GMNotes        = "",
-    Tags           = {"WitchFigure", "BoardSpace_Square"},
-    AltLookAngle   = {
-        x = 0.0,
-        y = 0.0,
-        z = 0.0
-    },
-    ColorDiffuse   = {
-        r = 0.0,
-        g = 0.0,
-        b = 0.0
-    },
-    LayoutGroupSortIndex = 0,
-    Value          = 0,
-    Locked         = false,
-    Grid           = true,
-    Snap           = true,
-    IgnoreFoW      = false,
-    MeasureMovement  = false,
-    DragSelectable = false,
-    Autoraise      = true,
-    Sticky         = false,
-    Tooltip        = true,
-    GridProjection = false,
-    HideWhenFaceDown  = false,
-    Hands          = false,
-    CustomImage    = {
-        ImageURL          = "",
-        ImageSecondaryURL = "",
-        ImageScalar       = 1.5,
-        WidthScale        = 0.0
-    },
-    CustomFigurine = {
-        UseMinimalCollider = false,
-        MirroredBack       = true
-    },
-    LuaScript      = "",
-    LuaScriptState = "",
-    XmlUI          = "",
-    AttachedSnapPoints = {}
-    },
-    Token = {
-    GUID           = nil,
-    Name           = "Custom_Model",
-    Transform      = {
-        posX   = 0,
-        posY   = 0,
-        posZ   = 0,
-        rotX   = 0,
-        rotY   = 0,
-        rotZ   = 0,
-        scaleX = 0.275,
-        scaleY = 0.275,
-        scaleZ = 0.275,
-      },
-    Nickname       = "0",
-    Description    = "",
-    GMNotes        = "",
-    Tags           = {},
-    AltLookAngle   = {
-        x = 0.0,
-        y = 0.0,
-        z = 0.0
-    },
-    ColorDiffuse   = {
-        r = 0.0,
-        g = 0.0,
-        b = 0.0
-    },
-    LayoutGroupSortIndex = 0,
-    Value          = 0,
-    Locked         = false,
-    Grid           = true,
-    Snap           = true,
-    IgnoreFoW      = false,
-    MeasureMovement  = false,
-    DragSelectable = false,
-    Autoraise      = true,
-    Sticky         = false,
-    Tooltip        = true,
-    GridProjection = false,
-    HideWhenFaceDown  = false,
-    Hands          = false,
-    CustomMesh     = {
-        MeshURL       = gitLink("Components/marker_rounded_cube.obj"),
-        DiffuseURL    = "",
-        NormalURL     = "",
-        ColliderURL   = "",
-        Convex        = true,
-        MaterialIndex = 0,
-        TypeIndex     = 0,
-        CastShadows   = true
-        },
-    LuaScript      = "",
-    LuaScriptState = "",
-    XmlUI          = ""
-    },
-    RefCard = {
-    GUID           = nil,
-    Name           = "Custom_Tile",
-    Transform      = {
-        posX   = 0,
-        posY   = 0,
-        posZ   = 0,
-        rotX   = 0,
-        rotY   = 0,
-        rotZ   = 0,
-        scaleX = 1.70,
-        scaleY = 1.0,
-        scaleZ = 1.70,
-      },
-    Nickname       = "",
-    Description    = "",
-    GMNotes        = "",
-    Tags           = {},
-    AltLookAngle   = {
-        x = 0.0,
-        y = 0.0,
-        z = 0.0
-    },
-    ColorDiffuse   = {
-        r = 0.2,
-        g = 0.2,
-        b = 0.2
-    },
-    LayoutGroupSortIndex = 0,
-    Value          = 0,
-    Locked         = false,
-    Grid           = true,
-    Snap           = true,
-    IgnoreFoW      = false,
-    MeasureMovement  = false,
-    DragSelectable = true,
-    Autoraise      = true,
-    Sticky         = true,
-    Tooltip        = true,
-    GridProjection = false,
-    HideWhenFaceDown  = false,
-    Hands          = false,
-    CustomImage    = {
-        ImageURL          = "",
-        ImageSecondaryURL = "",
-        ImageScalar       = 1.0,
-        WidthScale        = 0.0,
-        CustomTile        = {
-            Type      = 3,
-            Thickness = 0.1,
-            Stackable = false,
-            Stretch   = true
-        }
-    },
-    LuaScript      = "",
-    LuaScriptState = "",
-    XmlUI          = "",
-    AttachedSnapPoints = {}
-    },
-    CustomTile = {
-    GUID           = nil,
-    Name           = "Custom_Tile",
-    Transform      = {
-        posX   = 0,
-        posY   = 0,
-        posZ   = 0,
-        rotX   = 0,
-        rotY   = 0,
-        rotZ   = 0,
-        scaleX = 1.0,
-        scaleY = 1.0,
-        scaleZ = 1.0,
-      },
-    Nickname       = "",
-    Description    = "",
-    GMNotes        = "",
-    Tags           = {},
-    AltLookAngle   = {
-        x = 0.0,
-        y = 0.0,
-        z = 0.0
-    },
-    ColorDiffuse   = {
-        r = 1,
-        g = 1,
-        b = 1
-    },
-    LayoutGroupSortIndex = 0,
-    Value          = 0,
-    Locked         = false,
-    Grid           = true,
-    Snap           = true,
-    IgnoreFoW      = false,
-    MeasureMovement  = false,
-    DragSelectable = true,
-    Autoraise      = true,
-    Sticky         = true,
-    Tooltip        = true,
-    GridProjection = false,
-    HideWhenFaceDown  = false,
-    Hands          = false,
-    CustomImage    = {
-        ImageURL          = "",
-        ImageSecondaryURL = "",
-        ImageScalar       = 1.0,
-        WidthScale        = 0.0,
-        CustomTile        = {
-            Type      = 3,
-            Thickness = 0.2,
-            Stackable = false,
-            Stretch   = true
-        }
-    },
-    LuaScript      = "",
-    LuaScriptState = "",
-    XmlUI          = "",
-    AttachedSnapPoints = {}
-    },
-    Tray = {
-    GUID           = nil,
-    Name           = "BlockSquare",
-    Transform      = {
-        posX   = 0,
-        posY   = 0,
-        posZ   = 0,
-        rotX   = 0,
-        rotY   = 0,
-        rotZ   = 0,
-        scaleX = 1,
-        scaleY = 0.01,
-        scaleZ = 1,
-      },
-    Nickname       = "",
-    Description    = "",
-    GMNotes        = "",
-    Tags           = {},
-    AltLookAngle   = {
-        x = 0.0,
-        y = 0.0,
-        z = 0.0
-    },
-    ColorDiffuse   = {
-        r = 1.0,
-        g = 1.0,
-        b = 1.0,
-        a = 0.01
-    },
-    LayoutGroupSortIndex = 0,
-    Value          = 0,
-    Locked         = true,
-    Grid           = true,
-    Snap           = true,
-    IgnoreFoW      = false,
-    MeasureMovement  = false,
-    DragSelectable = false,
-    Autoraise      = true,
-    Sticky         = false,
-    Tooltip        = false,
-    GridProjection = false,
-    HideWhenFaceDown  = false,
-    Hands          = false,
-    LuaScript      = "",
-    LuaScriptState = "",
-    XmlUI          = "",
-    ChildObjects   = {
-        {
-          GUID         = nil,
-          Name         = "BlockSquare",
-          Transform    = {
-            posX = 0.5,
-            posY = 50,
-            posZ = 0,
-            rotX = 0,
-            rotY = 0,
-            rotZ = 0,
-            scaleX = 0.01,
-            scaleY = 100,
-            scaleZ = 1
-          },
-          Nickname     = "",
-          Description  = "",
-          GMNotes      = "",
-          AltLookAngle = {
-            x = 0.0,
-            y = 0.0,
-            z = 0.0
-          },
-          ColorDiffuse = {
-            r = 1.0,
-            g = 1.0,
-            b = 1.0,
-            a = 0.01
-          },
-          LayoutGroupSortIndex = 0,
-          Value      = 0,
-          Locked     = true,
-          Grid       = true,
-          Snap       = true,
-          IgnoreFoW  = false,
-          MeasureMovement  = false,
-          DragSelectable   = true,
-          Autoraise        = true,
-          Sticky           = true,
-          Tooltip          = false,
-          GridProjection   = false,
-          HideWhenFaceDown = false,
-          Hands          = false,
-          LuaScript      = "",
-          LuaScriptState = "",
-          XmlUI          = "",
-          },
-        {
-          GUID         = nil,
-          Name         = "BlockSquare",
-          Transform    = {
-            posX = 0,
-            posY = 50,
-            posZ = 0.5,
-            rotX = 0,
-            rotY = 0,
-            rotZ = 0,
-            scaleX = 1,
-            scaleY = 100,
-            scaleZ = 0.01
-          },
-          Nickname     = "",
-          Description  = "",
-          GMNotes      = "",
-          AltLookAngle = {
-            x = 0.0,
-            y = 0.0,
-            z = 0.0
-          },
-          ColorDiffuse = {
-            r = 1.0,
-            g = 1.0,
-            b = 1.0,
-            a = 0.01
-          },
-          LayoutGroupSortIndex = 0,
-          Value      = 0,
-          Locked     = true,
-          Grid       = true,
-          Snap       = true,
-          IgnoreFoW  = false,
-          MeasureMovement  = false,
-          DragSelectable   = true,
-          Autoraise        = true,
-          Sticky           = true,
-          Tooltip          = false,
-          GridProjection   = false,
-          HideWhenFaceDown = false,
-          Hands          = false,
-          LuaScript      = "",
-          LuaScriptState = "",
-          XmlUI          = "",
-          },
-        {
-          GUID         = nil,
-          Name         = "BlockSquare",
-          Transform    = {
-            posX = -0.5,
-            posY = 50,
-            posZ = 0,
-            rotX = 0,
-            rotY = 0,
-            rotZ = 0,
-            scaleX = 0.01,
-            scaleY = 100,
-            scaleZ = 1
-          },
-          Nickname     = "",
-          Description  = "",
-          GMNotes      = "",
-          AltLookAngle = {
-            x = 0.0,
-            y = 0.0,
-            z = 0.0
-          },
-          ColorDiffuse = {
-            r = 1.0,
-            g = 1.0,
-            b = 1.0,
-            a = 0.01
-          },
-          LayoutGroupSortIndex = 0,
-          Value      = 0,
-          Locked     = true,
-          Grid       = true,
-          Snap       = true,
-          IgnoreFoW  = false,
-          MeasureMovement  = false,
-          DragSelectable   = true,
-          Autoraise        = true,
-          Sticky           = true,
-          Tooltip          = false,
-          GridProjection   = false,
-          HideWhenFaceDown = false,
-          Hands          = false,
-          LuaScript      = "",
-          LuaScriptState = "",
-          XmlUI          = "",
-          },
-        {
-          GUID         = nil,
-          Name         = "BlockSquare",
-          Transform    = {
-            posX = 0,
-            posY = 50,
-            posZ = -0.5,
-            rotX = 0,
-            rotY = 0,
-            rotZ = 0,
-            scaleX = 1,
-            scaleY = 100,
-            scaleZ = 0.01
-          },
-          Nickname     = "",
-          Description  = "",
-          GMNotes      = "",
-          AltLookAngle = {
-            x = 0.0,
-            y = 0.0,
-            z = 0.0
-          },
-          ColorDiffuse = {
-            r = 1.0,
-            g = 1.0,
-            b = 1.0,
-            a = 0.01
-          },
-          LayoutGroupSortIndex = 0,
-          Value      = 0,
-          Locked     = true,
-          Grid       = true,
-          Snap       = true,
-          IgnoreFoW  = false,
-          MeasureMovement  = false,
-          DragSelectable   = true,
-          Autoraise        = true,
-          Sticky           = true,
-          Tooltip          = false,
-          GridProjection   = false,
-          HideWhenFaceDown = false,
-          Hands          = false,
-          LuaScript      = "",
-          LuaScriptState = "",
-          XmlUI          = "",
-          },
-    }
-    },
-    MissionMarker = {
-    GUID = nil,
-    Name = "CardCustom",
-    Transform = {
-        posX = 0,
-        posY = 0,
-        posZ = 0,
-        rotX = 0,
-        rotY = 0,
-        rotZ = 0,
-        scaleX = 1.5,
-        scaleY = 1.5,
-        scaleZ = 1.5,
-      },
-    Nickname     = "",
-    Description  = "",
-    GMNotes      = "",
-    Tags         = {},
-    AltLookAngle = {
-        x = 0.0,
-        y = 0.0,
-        z = 0.0
-    },
-    ColorDiffuse = {
-        r = 0.0,
-        g = 0.0,
-        b = 0.0,
-        a = 0.0
-    },
-    LayoutGroupSortIndex = 0,
-    Value        = 0,
-    Locked       = true,
-    Grid         = true,
-    Snap         = true,
-    IgnoreFoW    = true,
-    MeasureMovement = false,
-    DragSelectable = false,
-    Autoraise    = true,
-    Sticky       = true,
-    Tooltip      = false,
-    GridProjection = false,
-    HideWhenFaceDown = false,
-    Hands        = false,
-    SidewaysCard = false,
-    CardID       = 100,
-    CustomDeck   = {
-        ["1"] = {
-            FaceURL      = gitLink("/Table/PlayerBoard_Mission_Slot.png"),
-            BackURL      = gitLink("/Table/PlayerBoard_Mission_Slot.png"),
-            NumWidth     = 1,
-            NumHeight    = 1,
-            BackIsHidden = true,
-            UniqueBack   = false,
-            Type         = 0
-            }
-        },
-    LuaScript    = "",
-    LuaScriptState = "",
-    XmlUI        = "",
-    ContainedObjects = {},
-    },
-}
-
---[=[ The Snap Points associated with each player's board.
-       - Only the markers associated with the stat will be able to snap to it, reducing accidentally snapping
-         to other gauges.
-       - A work-around for keeping track of what snap point has what gauge value. This looks hideous in the tags list
-         but is the only way to have a snap point carry a string value. These Data-only tags are marked with ~.
-       - The "Mark" SnapPoints are not intended to be snapped to, but instead act as reference points to important
-         relative positions for the purposes of other scripts, several being exact mirrors of standard snapPoints. This is a dumb workaround for lack of named snappoints.
-       - For refernece, Local Position {x=1,z=1} is equivalent to World Position {x=-6.47, z=-4.58} with
-         the current board scale.
---]=] 
-
-
-
--- UTILITY FUNCTIONS
-function deepcopy(orig)
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        copy = {}
-        for orig_key, orig_value in next, orig, nil do
-            copy[deepcopy(orig_key)] = deepcopy(orig_value)
-        end
-        setmetatable(copy, deepcopy(getmetatable(orig)))
-    else -- number, string, boolean, etc
-        copy = orig
-    end
-    return copy
-end
-
-function printDebug(message)
-    if Global.call("isDebug") then
-        print(message)
-    end
-end
-
-function snapPointHasTag(snapPoint, checkTerm)
-    if snapPoint == nil then return false end
-    if snapPoint.tags == nil then return false end
-    
-    local checkFound = false
-    for _, tag in ipairs(snapPoint.tags) do
-        if tag == checkTerm then checkFound = true end
-    end
-    return checkFound
-end
-
-function getBoardSnapPointPosition(boardObj, snapPointName)
-    local boardSnapPoint = nil
-    local boardRotation = boardObj.getRotation()
-    printDebug("Board rotation: " .. boardRotation.x .. ", " .. boardRotation.y .. ", " .. boardRotation.z .. ", ")
-
-    for _, snapPoint in ipairs(boardObj.getSnapPoints()) do
-        if snapPointHasTag(snapPoint, snapPointName) then
-            boardSnapPoint = snapPoint
-        end
-    end
-    if boardSnapPoint ~= nil then
-        return boardObj.positionToWorld(Vector(boardSnapPoint.position))
-    end
-end
+local templateObjects = Global.getTable("templateObjects")
 
 
 
@@ -1169,6 +508,8 @@ function changeCladModel(cladID)
         cladObj.setState(modelIndex)
     end
 end
+
+
 
 -- OBJECT CREATION FUNCTIONS
 -- Each function handles different object types to create.

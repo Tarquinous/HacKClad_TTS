@@ -1,5 +1,5 @@
-activeGitCommit = "3258bd644c967d4f3d5f420114cacbd13381cfdd"
-setUninteractables = true
+activeGitCommit = "2db8573c49dcc3ae306ba0c1d500a5ad97fb35db"
+setUninteractables = false
 
 
 
@@ -2531,8 +2531,15 @@ function endDeckEnhance(player, selectedCards)
     
     
     -- Combine primary hand cards into a new enhanced deck.
+    local enhancedCardList = getCardsInHand(player, 1)
+    -- We need to double-check it hasn't still got the selected enhanced card (due to a bug it sometimes glitches because it does!)
+    for i, card in ipairs(enhancedCardList) do
+        if card.getGUID() == cardObj.getGUID() then
+            table.remove(enhancedCardList, i)
+        end
+    end
     local enhancedDeck = cardsToDeck(player,
-        getCardsInHand(player, 1),
+        enhancedCardList,
         enDeckSnapPoint,    -- Place onto enhanced deck pile.
         {x=0, y=90, z=180}, -- Flipped, and rotated horizontal.
         {x=0, y=-0.22, z=0} -- Board height.
