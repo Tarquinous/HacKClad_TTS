@@ -1,5 +1,5 @@
-activeGitCommit = "2db8573c49dcc3ae306ba0c1d500a5ad97fb35db"
-setUninteractables = false
+activeGitCommit = "27d28d7fde420bddbd1c8fa1264fc7a8502d3d4f"
+setUninteractables = true
 
 
 
@@ -77,6 +77,30 @@ function getPlayerFigure(player)
     end
     
     return witchFigure
+end
+
+function getActivePlayers()
+    local activePlayers = {}
+    for color, data in pairs(playerData) do
+        if data.charName ~= nil then
+            table.insert(activePlayers, color)
+        end
+    end
+    
+    -- Sort players by their turn order.
+    local sortedPlayers = {}
+    for _, color in pairs(activePlayers) do
+        if playerData[color].startingTurn ~= nil then
+            sortedPlayers[playerData[color].startingTurn] = color
+        end
+    end
+    
+    -- Only sort players if all of them can be sorted.
+    if #sortedPlayers == #activePlayers then
+        return sortedPlayers
+    else
+        return activePlayers
+    end
 end
 
 function deepcopy(orig)
@@ -1191,7 +1215,6 @@ function onObjectCollisionExit(registered_object, collision_info)
     end
 end
 
-
 function onObjectSpawn(obj)
   -- Resize cards and decks to match the scale of the default card size within the module!
   if obj.type == 'Deck' then
@@ -1284,6 +1307,10 @@ function onObjectLeaveZone(zone, object)
         
         end
     end
+end
+
+function onObjectPickUp(player, obj)
+    lockedHandCardsReform(player, obj)
 end
 
 
@@ -2313,6 +2340,12 @@ function endDeckReform(player, selectedCards)
     -- Shuffle it.
     if reformedDeck ~= nil then 
         reformedDeck.shuffle() -- Randomise card order
+        
+        -- Shuffle again later so we get a proper visual for it.
+        Wait.time(function()
+            reformedDeck.shuffle() 
+            end,
+            0.6)
     end
     
     
@@ -2474,7 +2507,7 @@ function startDeckEnhance(playersToEnhance)
             "reconstructMode_nine", -- selectID
             1, -- Required to select a card.
             1, -- Cannot select 2 cards at once.
-            "Select [b]1 card[/b] to from your [b][F05050]Enhanced deck[-][/b] to add to your starting deck.",
+            "Select [b]1 card[/b] from your [b][F05050]Enhanced deck[-][/b] to add to your starting deck.",
             {player})
     end
 end
@@ -2527,6 +2560,12 @@ function endDeckEnhance(player, selectedCards)
     -- Shuffle it.
     if reformedDeck ~= nil then 
         reformedDeck.shuffle() -- Randomise card order
+        
+        -- Shuffle again later so we get a proper visual for it.
+        Wait.time(function()
+            reformedDeck.shuffle() 
+            end,
+            0.6)
     end
     
     
@@ -2549,7 +2588,7 @@ function endDeckEnhance(player, selectedCards)
     -- The secondary hand should remain empty at this stage.
     deckToHand(player, 1, reformSnapPoint)
     
-    broadcastToColor("Selected initial Enhanced Card: " .. addedCard, player, {r=255/255, g=255/255, b=255/255, a=1})
+    broadcastToColor("Selected initial Enhanced Card: " .. addedCard .. "\n[909090](Setup complete, please wait for all other players to be ready.)[-]", player, {r=255/255, g=255/255, b=255/255, a=1})
     return {reformedDeck, enhancedDeck}
     
 end
@@ -2576,7 +2615,7 @@ function onPlayerHandChoice(player, modeID, selectedObjects, was_confirmed)
             function()
                 moveTopCardToTurnSlot(player, newDecks[1])
             end,
-            0.6)
+            1.0)
     end
 end
 
@@ -2720,6 +2759,26 @@ function swapHands(player)
         end
     end
 end
+-- [→onObjectPickUp()]: Prevents players moving a card from their hand
+function lockedHandCardsReform(player, pickUpObj)
+    if playerData[player].reconstructMode then
+        local lockedObject = false
+        for _, obj in pairs(getCardsInHand(player, 1)) do
+            if pickUpObj == obj then
+                lockedObject = true
+            end
+        end
+        for _, obj in pairs(getCardsInHand(player, 2)) do
+            if pickUpObj == obj then
+                lockedObject = true
+            end
+        end
+        
+        if lockedObject == true then
+            pickUpObj.drop()
+        end
+    end
+end
 
 
 
@@ -2732,9 +2791,10 @@ function setCardCache()
         obj.destruct()
     end
 
-    forecastObjects = turnBoard.getTable("forecastObjects")
+    cacheObjects = turnBoard.getTable("forecastObjects")
+    table.insert(cacheObjects, templateObjects["MissionMarker"])
     
-    for _, objData in pairs(forecastObjects) do
+    for _, objData in pairs(cacheObjects) do
         local spawnedObject = spawnObjectData({
             data = objData,
             position = {x=0, y=-3, z=0},
@@ -2796,7 +2856,9 @@ function gameSetup(args)
             function()
                 autoGameSetup(args.mode)
             end,
-            0.5) 
+            0.5)
+    else
+        destroySetupBoard()
     end
 end
 
@@ -2806,12 +2868,18 @@ function destroyScriptedObjects()
             obj.destruct()
         elseif obj.hasTag("Tool_SetupObjects") then
             obj.destruct()
-        elseif obj.hasTag("Tool_PlayerBoard") then
+        elseif obj.hasTag("Tool_PlayerBoard") or obj.hasTag("Tool_SetupBoard") then
             for i, btn in pairs(obj.getButtons()) do
                 obj.removeButton(i - 1)
             end
             obj.UI.setXmlTable({{}})
         end
+    end
+end
+
+function destroySetupBoard()
+    for _, obj in pairs(getObjectsWithTag("Tool_SetupBoard")) do
+            obj.destruct()
     end
 end
 
@@ -2821,23 +2889,37 @@ function autoGameSetup(gameMode)
     baseTime = 2.5
     Wait.time(
         function()
-            cladDeckSetupCoop(gameMode)
+            cladDeckSetup(gameMode)
         end,
         baseTime)
-    if gameMode == 1 then
-        baseTime = baseTime + 1.0
-    else
+    
+    if #getActivePlayers() == 1 then -- SOLO
+        printDebug("Setting up clad deck as mode: Solo")
         baseTime = baseTime + 4.5
+    elseif gameMode == 2 then -- COOP
+        printDebug("Setting up clad deck as mode: Co-op")
+        baseTime = baseTime + 2.5
+    else -- DEFAULT
+        printDebug("Setting up clad deck as mode: Default")
+        baseTime = baseTime + 1.0
     end
     
     Wait.time(
         function()
-            dealMissions(gameMode)
+            dealMode = findMissionDealMode(gameMode)
+            
+            -- If we don't need any mission cards, we skip it!
+            if dealMode == "none" then 
+                autoGameSetupSecond()
+            else
+                dealMissions(dealMode)
+                setupProceedButton()
+            end
         end,
         baseTime)
 end
 
-function cladDeckSetupCoop(gameMode)
+function cladDeckSetup(gameMode)
     local cladDecks = {}
     for voltageNumber = 1,3,1 do
         local cardList = {}
@@ -2873,7 +2955,7 @@ function cladDeckSetupCoop(gameMode)
                 deckObj.setRotation({
                     x = turnBoard.getRotation().x,
                     y = turnBoard.getRotation().y,
-                    z = gameMode == 2 and 180
+                    z = #getActivePlayers() == 1 and 180
                         or voltageNumber == 1 and 180
                         or 0,
                     })
@@ -2887,14 +2969,7 @@ function cladDeckSetupCoop(gameMode)
     end
     
     local baseTime = 1.0
-    if gameMode == 1 then
-         -- Shuffle the Voltage 1 deck
-        Wait.time(function()
-            cladDecks[1].shuffle()
-            end,
-            baseTime, 1)
-        
-    elseif gameMode == 2 then
+    if #getActivePlayers() == 1 then 
         -- Move the Voltage 2 deck into the Voltage 1 deck.
         Wait.time(function()
             cladDecks[1].putObject(cladDecks[2])
@@ -2940,6 +3015,30 @@ function cladDeckSetupCoop(gameMode)
                 0.1, 3) -- Repeat 2 times total.
             end,
             baseTime, 1)
+            
+    -- Versus mode
+    elseif gameMode == 1 then
+         -- Shuffle the Voltage 1 deck
+        Wait.time(function()
+            cladDecks[1].shuffle()
+            end,
+            baseTime, 1)
+        
+    -- Coop mode
+    elseif gameMode == 2 then
+        -- Move the Voltage 2 deck into the Voltage 1 deck.
+        Wait.time(function()
+            cladDecks[1].putObject(cladDecks[2])
+            end,
+            baseTime, 1)
+        baseTime = baseTime + 0.5
+        
+        -- Shuffle the Voltage 1 deck
+        Wait.time(function()
+            cladDecks[1].shuffle()
+            end,
+            baseTime, 1)
+        baseTime = baseTime + 0.5
     end
 end
 
@@ -2951,36 +3050,35 @@ function randomisePlayerOrder()
         return '[' .. string.format("%02x%02x%02x", color[1]*255, color[2]*255, color[3]*255) .. ']'
     end
 
-    local seated  = getSeatedPlayers()
-    local shuffled = {}
-    while #seated > 0 do
-        local rand = math.random(1, #seated)
-        local playerColour = seated[rand]
+    local activePlayers = getActivePlayers()
+    
+    local shuffledPlayers = {}
+    while #activePlayers > 0 do
+        local rand = math.random(1, #activePlayers)
+        local playerColour = activePlayers[rand]
         
-        -- If the player has a designated playing zone. Other seated players are irrelevant.
-        if playerData[playerColour] and playerData[playerColour].boardZoneGUID ~= nil then
-            table.insert(shuffled, seated[rand])
-            
-            if getPlayerFigure(playerColour) == nil then
-                printToAll("One or more players has no valid character selected.", messageColors.Error)
-                return nil
-            end
+        table.insert(shuffledPlayers, playerColour)
+        
+        if getPlayerFigure(playerColour) == nil then
+            printToAll("One or more players does not have a figure to place.", messageColors.Error)
+            return nil
         end
         
-        table.remove(seated, rand)
+        table.remove(activePlayers, rand)
     end
 
-    local msg = ""
-    for k, color in ipairs(shuffled) do
-        msg = msg .. k .. ". " .. BBcolor(color) .. Player[color].steam_name .. "[-]"
-        if k ~= #shuffled then
+    local msg = "Player order: "
+    for k, color in ipairs(shuffledPlayers) do
+        playerName = Player[color].steam_name ~= "" and Player[color].steam_name or color
+        msg = msg .. k .. ". " .. BBcolor(color) .. playerName .. "[-]"
+        if k ~= #shuffledPlayers then
             msg = msg .. ", "
         end
     end
 
     broadcastToAll(msg, {1, 1, 1})
     
-    for i, player in ipairs(shuffled) do
+    for i, player in ipairs(shuffledPlayers) do
         playerData[player].startingTurn = i,
         Wait.time(function()
             local witchFigure = getPlayerFigure(player)
@@ -2994,7 +3092,7 @@ function randomisePlayerOrder()
     Global.setTable("playerData", playerData)
 end
 
-function dealMissions(gameMode)
+function dealMissions(dealMode)
     local poolGrid = {
         {x=-2, z=0},
         {x=-1, z=0},
@@ -3007,121 +3105,217 @@ function dealMissions(gameMode)
         {x=1, z=-1},
         {x=2, z=-1},
     }
-
+    local function BBcolor(stringColor)
+        local color = stringColorToRGB(stringColor)
+        return '[' .. string.format("%02x%02x%02x", color[1]*255, color[2]*255, color[3]*255) .. ']'
+    end
+    
+    local playersRequireMission = {}
+    for _, color in pairs(getActivePlayers()) do
+        if playerData[color].charType == "Base" then
+            table.insert(playersRequireMission, color)
+        end
+    end
+    
+    local broadcastMsg = ""
+    -- Print out a message to let people know Mission cards are being dealt out.
+    if #playersRequireMission ~= #getActivePlayers()  then
+        -- If at least one player doesn't need Mission Cards, we want to highlight who
+        -- specifically gets them to help people avoid thinking this is an error.
+        broadcastMsg = "Dealing Mission Cards to "
+        for i, color in pairs(playersRequireMission) do
+            local charName = playerData[color].charName
+            broadcastMsg  = broadcastMsg .. BBcolor(color) .. charName .. "[-]"
+            if i == #playersRequireMission - 1 then
+                broadcastMsg = broadcastMsg .. ", and "
+            elseif i < #playersRequireMission then
+                broadcastMsg = broadcastMsg .. ", "
+            else
+                broadcastMsg = broadcastMsg .. "."
+            end
+        end
+    elseif dealMode == "base" then
+        -- Community pool method can be a little esoteric so this helps.
+        broadcastMsg = "Acquire 1 Mission card at a time in the following order:\n"
+        for i = 1, #playersRequireMission, 1 do
+            local playerColor = playersRequireMission[i]
+            local playerName = Player[playerColor].steam_name ~= "" and Player[playerColor].steam_name or playerColor
+            broadcastMsg = broadcastMsg .. BBcolor(playerColor) .. playerName .. "[-] → "
+        end
+        for i = #playersRequireMission, 1, -1 do
+            local playerColor = playersRequireMission[i]
+            local playerName = Player[playerColor].steam_name ~= "" and Player[playerColor].steam_name or playerColor
+            broadcastMsg = broadcastMsg .. BBcolor(playerColor) .. playerName .. "[-]"
+            
+            if i == 1 then
+                broadcastMsg = broadcastMsg .. "."
+            else
+                broadcastMsg = broadcastMsg .. " → "
+            end
+        end
+    else
+        -- If everyone gets mission cards, make it generic.
+        broadcastMsg = "Dealing Mission cards to all players."
+    end
+    broadcastToAll(broadcastMsg, messageColors.Default)
+ 
     printDebug("Removing all Mission Cards from table.")
     for _, object in ipairs(getObjectsWithTag("playerComponent_MissionCard")) do
         object.Destruct()
     end
 
     printDebug("Spawning mission card deck.")
-    
-    -- Find mode type for how to deal mission cards
-    -- Based on if any Delta characters are in play.
-    local rulesType = "Base"
-    local numPlayers = 0
-    for color, data in pairs(Global.getTable("playerData")) do
-        if Player[color].seated == true then
-            numPlayers = numPlayers + 1
-            if data.charName == nil then
-                printToAll("One or more players has no valid character selected.", messageColors.Error)
-                return false
-            elseif data.charType == "Delta" then
-                rulesType = "Delta"
-            end
-        end
-    end
-    if numPlayers == 1 then rulesType = "Solo" end
-    
-    printToAll("Dealing Mission Cards.", messageColors.Default)
     local missionDeck = spawnObjectData({
-        data = generateMissionDeck(missionData),
+        data = generateMissionDeck(
+            missionData,
+            dealMode == "coop"
+            ),
         position = {x=-20, y=0.25, z=25},
         rotation = {x=0, y=180, z=0}
     })
     missionDeck.addTag("PlayerComponent_MissionDeck") -- For some reason this can't be set in the generateObject data???
-    missionDeck.locked = true
     missionDeck.shuffle()
-
-    -- Button attached to Mission Deck to continue the setup procedure once players are done assigning Mission Cards.
-    missionDeck.createButton({
-        label          = "Continue\nsetup",
-        click_function = "autoGameSetupSecond",
-        function_owner = Global,
-        font_size      = 500,
-        width          = 1000,
-        height         = 1000,
-        color          = {r=0.2, g=0.2, b=0.8, a=80},
-        font_color     = {r=255, g=255, b=255, a=255},
-        position       = {
-            x =  0,
-            y =  0,
-            z =  4,
-        },
-        tooltip        = "Proceed with Auto Setup once you have completed selecting Mission Cards.",
-        })
-    
-    -- Delay dealing for visual confirmation.
-    Wait.time(
+        
+    if dealMode == "base" then -- Under base game rules, deal out a community pool
+        Wait.time(
         function()
-            -- Under Delta and Coop rules, deal to each mission char.
-            if rulesType == "Delta" or rulesType == "Solo" or gameMode == "coop" then
-                for playerColor, playerData in pairs(Global.getTable("playerData")) do
-                    if Player[playerColor].seated == true then
-                        if playerData.charType == "Base" then
-                        
-                            local dealCount = ((rulesType == "Solo")    and 2) or
-                                              ((gameMode  == "versus") and 5) or
-                                              ((gameMode  == "coop")   and 2) or
-                                              2
-                            for i=1,dealCount do 
-                                local dealtCard = missionDeck.takeObject()
-                                dealtCard.addTag("PlayerOwned_" .. playerColor)
-                                dealtCard.deal(1, playerColor, 1)
-                            end
-                        end
-                    end
-                end
-                
-            else -- Under Base Game rules, community pool.
-            
-                -- Loop through dealing out each community card individually.
-                for i=1,10 do
-                    local basePosition = missionDeck.getPosition()
-                    basePosition = {
-                        x = basePosition.x + 20 + (poolGrid[i].x * 3.5),
-                        y = 0.5,
-                        z = basePosition.z +  0 + (poolGrid[i].z * 5),
-                    }
-                    -- Delay each card deal based on sequence order. Makes it look cool :)
-                    Wait.time(
-                        function()
-                            local dealtCard = missionDeck.takeObject()
-                            dealtCard.setPositionSmooth(basePosition)
-                        end,
-                        0.1*i,
-                        1)
-                end
-                
+            -- Loop through dealing out each community card individually.
+            for i=1,10 do
+                local basePosition = missionDeck.getPosition()
+                basePosition = {
+                    x = basePosition.x + 20 + (poolGrid[i].x * 3.5),
+                    y = 0.5,
+                    z = basePosition.z +  0 + (poolGrid[i].z * 5),
+                }
+                -- Delay each card deal based on sequence order. Makes it look cool :)
+                Wait.time(
+                    function()
+                        local dealtCard = missionDeck.takeObject()
+                        dealtCard.setPositionSmooth(basePosition)
+                    end,
+                    0.1*i,
+                    1)
             end
-                
-            return
         end,
         0.5, -- 500 milliseconds
         1    -- run the function 1 time
         )
-                            
+    else -- Under other rulesets we just deal directly to player's hands, an amount based on the mode!
+        local dealCount = 
+            (dealMode == "solo"   and 2) or
+            (dealMode == "delta"  and 5) or
+            (dealMode == "coop"   and 2) or
+            2
+            
+        for _, playerColor in pairs(playersRequireMission) do
+            for i=1,dealCount do 
+                local dealtCard = missionDeck.takeObject()
+                dealtCard.addTag("PlayerOwned_" .. playerColor)
+                dealtCard.deal(1, playerColor, 1)
+            end
+        end
+    end
+end
+
+function returnMissionCardsToDeck()
+    local missionDeck = nil
+    for _, obj in pairs(getObjectsWithTag("PlayerComponent_MissionDeck")) do
+        missionDeck = obj
+        printDebug("Found Mission Deck: " .. obj.getGUID())
+        break
+    end
+    if missionDeck == nil then printDebug("No Mission Deck present to return cards to.") return end
     
+    for _, obj in pairs(getObjectsWithTag("PlayerComponent_MissionCard")) do
+        printDebug("Mission card with GUID ... " .. obj.getGUID())
+        local cardPos = obj.getPosition()
+        -- Check if it's outside the player's general play area.
+        local nearZone = false
+        for playerColor, position in pairs(playerPositions) do
+            if cardPos.x > position.x-20 and 
+               cardPos.x < position.x+20 and
+               cardPos.z > position.z-15 and
+               cardPos.z < position.z+15 then
+               printDebug("Card near zone ... " .. playerColor)
+               nearZone = true
+            end
+        end
+        
+        if nearZone == false then
+            printDebug("Mission card is out of player zones, returning to Mission Deck.")
+            missionDeck.putObject(obj)
+        end
+    end
     
-    --missionDeck.Destruct()
+end
+
+function findMissionDealMode(gameMode)
+    -- The available modes are:
+    --  base (Community pool)
+    --  delta (5 card draft)
+    --  solo (2 card)
+    --  coop (2 card)
+    --  none (Skip missions)
+    local rulesType = "base"
+    local numPlayers = 0
+    local numberPlayersToDealMissions = 0
+    for color, data in pairs(Global.getTable("playerData")) do
+        if data.charName ~= nil then
+            numPlayers = numPlayers + 1
+            if data.charType == "Base" then -- Only deal to Base type characters
+                numberPlayersToDealMissions = numberPlayersToDealMissions + 1
+            elseif data.charType == "Delta" then -- If a Delta character is present, we use Delta rules (even if they aren't getting missions!)
+                rulesType = "delta"
+            end
+        end
+    end
+    
+    if numberPlayersToDealMissions == 0 then
+        rulesType = "none"
+    elseif numPlayers == 1 then
+        rulesType = "solo"
+    elseif gameMode == 2 then
+        rulesType = "coop"
+    end
+    
+    return rulesType
+end
+
+function setupProceedButton()
+    -- Button attached to Mission Deck to continue the setup procedure once players are done assigning Mission Cards.
+    setupBoardObj = nil
+    for _, obj in pairs(getObjectsWithTag("Tool_SetupBoard")) do
+        setupBoardObj = obj
+    end
+    
+    if setupBoardObj then
+        setupBoardObj.createButton({
+            label          = "Continue\nsetup",
+            click_function = "autoGameSetupSecond",
+            function_owner = Global,
+            font_size      = 500,
+            width          = 2300,
+            height         = 1300,
+            color          = {r=0.2, g=0.6, b=0.8, a=80},
+            font_color     = {r=255, g=255, b=255, a=255},
+            scale          = {x=0.2, y=1, z=0.2},
+            position       = {
+                x =  0,
+                y =  0.8,
+                z =  0,
+            },
+            tooltip        = "Proceed with Auto Setup once you have completed selecting Mission Cards.",
+            })
+    end
 end
 
 function autoGameSetupSecond()
+    destroySetupBoard()
+    
     Wait.time(
         function()
-            -- Find and destroy the Mission Deck
-            for _, obj in pairs(getObjectsWithTag("PlayerComponent_MissionDeck")) do
-                obj.destruct()
-            end
+            -- Return unwanted cards to the Mission Deck.
+            returnMissionCardsToDeck()
         
             -- Prompt players to enhance their 9th card.
             ninthEnhancedCard()
@@ -3130,6 +3324,9 @@ function autoGameSetupSecond()
 end
 
 function ninthEnhancedCard()
+    -- We only want to use this on seated players due to how the UI is uninteractable for NPCs.
+    broadcastToAll("Each player selects 1 card from their Enhanced Deck to add to their starting deck [A0A0A0][i](forming a deck of 9 cards)[/i][-].", messageColors.Default)
+    
     local seated  = getSeatedPlayers()
     local enhancePlayers = {}
     for _, player in ipairs(seated) do
@@ -3230,7 +3427,7 @@ function generateObject(arg)
     return outputObject
 end
 -- Decks take on an entirely different form to all other objects, and so have to be generated through a secondary function.
-function generateMissionDeck(deckData)
+function generateMissionDeck(deckData, coopMode)
     local outputObject = generateObject({
             objType = "Deck",
             })
@@ -3249,28 +3446,30 @@ function generateMissionDeck(deckData)
 
     -- Iterate over all cards from the given deck type (standard / enhanced)
     for i, card in ipairs(deckData.cardList) do
-        -- TTS REQUIRES the number be formatted as a 2 digit ID concatenated to the CustomDeck ID number.
-        -- i.e. The first card must be X00, followed by X01.
-        local GeneratedID = "1" .. string.format("%02d" , card.gridPos)
+        if card.coop == true or coopMode == false then
+            -- TTS REQUIRES the number be formatted as a 2 digit ID concatenated to the CustomDeck ID number.
+            -- i.e. The first card must be X00, followed by X01.
+            local GeneratedID = "1" .. string.format("%02d" , card.gridPos)
+            
+            table.insert(outputObject.ContainedObjects, {
+                Name = "Card",
+                Nickname = card.name,
+                CardID   = GeneratedID,
+                Tags     = {"PlayerComponent_MissionCard"},
+                CustomDeck = {
+                    ["1"] = {
+                        FaceURL      = deckData.faceURL ,
+                        BackURL      = deckData.backURL,
+                        NumWidth     = deckData.imgGridWidth,
+                        NumHeight    = deckData.imgGridHeight,
+                        BackIsHidden = true,
+                        UniqueBack   = true,
+                        Type = 0
+                }} 
+            })
         
-        table.insert(outputObject.ContainedObjects, {
-            Name = "Card",
-            Nickname = card.name,
-            CardID   = GeneratedID,
-            Tags     = {"PlayerComponent_MissionCard"},
-            CustomDeck = {
-                ["1"] = {
-                    FaceURL      = deckData.faceURL ,
-                    BackURL      = deckData.backURL,
-                    NumWidth     = deckData.imgGridWidth,
-                    NumHeight    = deckData.imgGridHeight,
-                    BackIsHidden = true,
-                    UniqueBack   = true,
-                    Type = 0
-            }} 
-        })
-        
-        table.insert(outputObject.DeckIDs, GeneratedID)
+            table.insert(outputObject.DeckIDs, GeneratedID)
+        end
     end
     
     return outputObject

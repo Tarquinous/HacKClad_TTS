@@ -349,9 +349,9 @@ turnBoardSnapPoints = {
     standbySlot2      = {x=-2.2612, z=5.1061}, 
     standbySlot2_Mark = {x=-2.2612, z=5.1061, tags={"~2"}}, 
     standbySlot3      = {x= 1.0918, z=5.1061}, 
-    standbySlot3_Mark = {x=-1.0918, z=5.1061, tags={"~3"}}, 
+    standbySlot3_Mark = {x= 1.0918, z=5.1061, tags={"~3"}}, 
     standbySlot4      = {x= 4.4614, z=5.1061},
-    standbySlot4_Mark = {x=-4.4614, z=5.1061, tags={"~4"}}, 
+    standbySlot4_Mark = {x= 4.4614, z=5.1061, tags={"~4"}}, 
     }
 
 -- onLoad function: set global variables, register collisions, create an on/off toggle button, and create an auto-OFF timer.
@@ -518,14 +518,15 @@ function setSnapPoints()
         table.insert(generatedSnapPoints, {
             position = {
                 x = snapPoint.x,
-                y = (snapPoint.y or 0) + 0.5,                                                               -- Y
-                z = snapPoint.z
-            },
+                y = (snapPoint.y or 0) + 0.5,
+                z = snapPoint.z,
+                },
             rotation = {
                 x = 0,
                 y = (snapPoint.rotation or 0),
-                z = 0},
-            false,
+                z = 0,
+                },
+            rotation_snap = snapPoint.rotation ~= nil and true or false,
             tags = snapPoint.tags or {}
             })
     end

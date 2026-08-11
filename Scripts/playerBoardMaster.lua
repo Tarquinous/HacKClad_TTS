@@ -269,7 +269,7 @@ local characterData = {
                 { gridPos = 3, name = "Arm Strike",       VP = 1 ,ref="BAS-W05-04"},
                 { gridPos = 4, name = "Generate Barrier", VP = 1 ,ref="BAS-W05-05"},
                 { gridPos = 5, name = "Retrieval Drone",  VP = 1 ,ref="BAS-W05-06"},
-                { gridPos = 6, name = "Defrag",           VP = 1 ,ref="BAS-W05-07"},
+                { gridPos = 6, name = "Defrag",           VP = 2 ,ref="BAS-W05-07"},
                 { gridPos = 7, name = "Upgrade",          VP = 1 ,ref="BAS-W05-08"}
                 },
             enhanced = {
@@ -342,7 +342,7 @@ local characterData = {
             frontURL   = gitLink("Characters/Croy/Warp_Gate_Token.png"),
             backURL    = "",
             edgeColour = {r=35, g=35, b=35},
-            position   = {x=0.94, z=-1.2, rotation=0},
+            position   = {x=-0.40, z=-1.2, rotation=0},
             scale      = 0.6,
             type       = 2, -- Circle
             tags       = {"BoardSpace_Edge"}
@@ -351,7 +351,7 @@ local characterData = {
             frontURL   = gitLink("Characters/Croy/Warp_Gate_Token.png"),
             backURL    = "",
             edgeColour = {r=35, g=35, b=35},
-            position   = {x=1.15, z=-1.2, rotation=0},
+            position   = {x=-0.61, z=-1.2, rotation=0},
             scale      = 0.6,
             type       = 2, -- Circle
             tags       = {"BoardSpace_Edge"}
@@ -360,7 +360,7 @@ local characterData = {
             frontURL   = gitLink("Characters/Croy/Warp_Gate_Token.png"),
             backURL    = "",
             edgeColour = {r=35, g=35, b=35},
-            position   = {x=0.94, z=-1.50, rotation=0},
+            position   = {x=-0.40, z=-1.50, rotation=0},
             scale      = 0.6,
             type       = 2, -- Circle
             tags       = {"BoardSpace_Edge"}
@@ -369,7 +369,7 @@ local characterData = {
             frontURL   = gitLink("Characters/Croy/Warp_Gate_Token.png"),
             backURL    = "",
             edgeColour = {r=35, g=35, b=35},
-            position   = {x=1.15, z=-1.50, rotation=0},
+            position   = {x=-0.61, z=-1.50, rotation=0},
             scale      = 0.6,
             type       = 2, -- Circle
             tags       = {"BoardSpace_Edge"}
@@ -1455,7 +1455,7 @@ local boardSnapPoints = {
         stdDeckMark    = {x=-0.572, z= 0.437, rotation=0,   tags={"StandardDeck"}},
         enhDeckMark    = {x=-0.618, z=-0.568, rotation=270, tags={"EnhancedDeck"}}, -- Enhanced Deck
         discardMark    = {x=-1.265, z= 0.437, rotation=0,   tags={"Discard"}},
-        reformPileMark = {x=-0.618, z=-1.400, rotation=0,   tags={"~Reform"}},
+        reformPileMark = {x= 0.550, z= 1.700, rotation=0,   tags={"~Reform"}},
         shardTrayMark  = {x= 0.048, z=-0.635, rotation=0,   tags={"VPTray"}},       -- Magic Shard Tray
         missionCard_1  = {x= 0.010, z=-1.550, rotation=0},                          -- Mission Card 1 area
         missionCard_2  = {x= 0.560, z=-1.550, rotation=0},                          -- Mission Card 2 area
@@ -1630,7 +1630,7 @@ function generateButtons(boardObj)
                 charSelect   = charName,
                 gridPosition = positionLayout[charName],
                 iconImage    = character.icon,
-                tooltip      = (charName .. "\n(" .. character.sourceGame .. ")"),
+                tooltip      = (charName .. "\n[D0D0D0](" .. character.sourceGame .. ")[-]"),
                 })
         )
     end
@@ -1654,7 +1654,9 @@ function generateButtons(boardObj)
             charSelect   = "Clear",
             gridPosition = positionLayout["Clear_Witch"],
             iconImage    = gitLink("Characters/Cancel/Cancel_charSelect.png"),
-            tooltip      = "Clear character board"
+            tooltip      = "Clear character board",
+            scale        = {x=2, y=1, z=2},
+            active       = false
             })
         )
     
@@ -1670,7 +1672,7 @@ function createXMLButton(args)
     --   gridPosition
     --   iconImage
     --   tooltip
-    --   initActive
+    --   active
 
     -- We receive the grid-based position and scale it according to the button sizes.
     -- We do not use the Y position as all buttons are kept on the same height.
@@ -1690,9 +1692,9 @@ function createXMLButton(args)
         attributes = {
             id            = args.charSelect,
             image         = args.iconImage or "",
-            active        = true,
-            height        = btnScale*luaToXmlRatioBtnSize,
-            width         = btnScale*luaToXmlRatioBtnSize,
+            active        = args.active == nil and true or args.active,
+            height        = btnScale*luaToXmlRatioBtnSize * (args.scale and args.scale.z or 1),
+            width         = btnScale*luaToXmlRatioBtnSize * (args.scale and args.scale.x or 1),
             position      =
                 placementPosition.x * luaToXmlRatioPos * btnSpacing * -1 .. " " ..
                 placementPosition.z * luaToXmlRatioPos * btnSpacing * -1 .. " " .. 
@@ -1712,7 +1714,9 @@ function createXMLButton(args)
             z = args.gridPosition.z,
             },
         tooltip       = args.tooltip,
-        active        = args.initActive or true
+        active        = args.initActive or true,
+        active        = args.active,
+        scale         = args.scale,
         })
     
     _G["onClick_" .. args.charSelect .. args.boardObj.getGUID()] = function(obj, player, alt_click)
@@ -1737,7 +1741,7 @@ function createGridButton(args)
             z =  (args.position.z or 0) * btnScale * btnSpacing * -1,
         },
         tooltip        = args.tooltip or "",
-        scale          = args.active == false and {x=0, y=0, z=0} or {x=1, y=1, z=1},
+        scale          = args.active == false and {x=0, y=0, z=0} or args.scale or {x=1, y=1, z=1},
     })
 end
 
@@ -1759,11 +1763,13 @@ function characterSelect(boardObj, character_ID)
     elseif character_ID == "Clear" then
         removeAllPlayerOwnedObjects(assignedPlayer)
         updatePlayerCharSetting(assignedPlayer, nil)
+        disableClearButton(boardObj)
         return
     end
     
     spawnCharacterComponents(assignedPlayer, boardObj, character_ID)
     updatePlayerCharSetting(assignedPlayer, character_ID)
+    enableClearButton(boardObj)
 end
 
 function updatePlayerCharSetting(playerColor, character_ID)
@@ -1984,7 +1990,39 @@ function removeAllPlayerOwnedObjects(player)
     end
 end
 
+function enableClearButton(boardObj)
+    xmlTable = boardObj.UI.getXmlTable()
+    
+    for _, element in pairs(xmlTable) do
+        if element.attributes.id == "Clear" then
+            element.attributes.active = true
+        end
+    end
+    
+    boardObj.UI.setXmlTable(xmlTable)
+    
+    boardObj.editButton({
+        index = 13,
+        scale = {x=2, y=0, z=2},
+        })
+end
 
+function disableClearButton(boardObj)
+    xmlTable = boardObj.UI.getXmlTable()
+    
+    for _, element in pairs(xmlTable) do
+        if element.attributes.id == "Clear" then
+            element.attributes.active = false
+        end
+    end
+    
+    boardObj.UI.setXmlTable(xmlTable)
+    
+    boardObj.editButton({
+        index = 13,
+        scale = {x=0, y=0, z=0},
+        })
+end
 
 -- OBJECT CREATION FUNCTIONS
 -- Each function handles different object types to create.

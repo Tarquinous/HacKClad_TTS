@@ -2,7 +2,7 @@ function gitLink(fileDirectory)
     return Global.call("gitLink", fileDirectory)
 end
 
-local btnScale  = 160
+local btnScale  = 1200
 local btnMargin = 5   -- Percentage
 
 local btnSpacing           = (1 + (btnMargin/100)) / 490
@@ -20,33 +20,39 @@ local xmlSwitches = {
         state = true,
         imageEnabled  = gitLink("/UI/Gamemode_Versus_Enabled.png"),
         imageDisabled = gitLink("/UI/Gamemode_Versus_Disabled.png"),
+        tooltip       = "Free-For-All Mode",
         },
     mode_coop = {
         type = "mode",
         state = false,
         imageEnabled  = gitLink("/UI/Gamemode_Coop_Enabled.png"),
         imageDisabled = gitLink("/UI/Gamemode_Coop_Disabled.png"),
+        tooltip       = "Cooperation Mode",
         },
     setup_auto = {
         type = "setup",
         state = true,
         imageEnabled  = gitLink("/UI/Gamemode_Auto_Enabled.png"),
         imageDisabled = gitLink("/UI/Gamemode_Auto_Disabled.png"),
+        tooltip       = "Automated Setup",
         },
     setup_manual = {
         type = "setup",
         state = false,
         imageEnabled  = gitLink("/UI/Gamemode_Manual_Enabled.png"),
         imageDisabled = gitLink("/UI/Gamemode_Manual_Disabled.png"),
+        tooltip       = "Manual Setup",
         }
 }
 local messageColors = Global.getTable("messageColors")
 local positionLayout  = {
-    ["mode_default"]   = {x = -2, y = 0, z =   2},
-    ["mode_coop"]      = {x =  1, y = 0, z =   2},
-    ["setup_auto"]     = {x = -2, y = 0, z =   0},
-    ["setup_manual"]   = {x =  1, y = 0, z =   0},
-    ["gameSetup"]      = {x =  0, y = 1.18, z =  -2},
+    ["mode_label"]     = {x = -2.5, y = 0, z = 4},
+    ["mode_default"]   = {x = -0.5, y = 0, z = 4},
+    ["mode_coop"]      = {x =  1.5, y = 0, z = 4},
+    ["setup_label"]    = {x = -2.5, y = 0, z = 2},
+    ["setup_auto"]     = {x = -0.5, y = 0, z = 2},
+    ["setup_manual"]   = {x =  1.5, y = 0, z = 2},
+    ["gameSetup"]      = {x =  0, y = 0.7, z = 0},
 }
 
 -- UTILITY FUNCTIONS
@@ -153,7 +159,7 @@ function generateButtons()
                 charSelect   = switchName,
                 gridPosition = positionLayout[switchName],
                 iconImage    = xmlSwitch.state and xmlSwitch.imageEnabled or xmlSwitch.imageDisabled,
-                tooltip      = switchName,
+                tooltip      = xmlSwitch.tooltip,
                 buttonWidth  = 2
                 })
         )
@@ -164,6 +170,7 @@ function generateButtons()
             createXMLCache({
                 iconImage    = xmlSwitch.imageEnabled
             })
+        )
         table.insert(
             menuTiles,
             createXMLCache({
@@ -179,15 +186,41 @@ function generateButtons()
         boardObj = self,
         clickFunction = "beginGameSetup",
         label = "BEGIN\nSETUP",
-        fontSize = 250,
-        width = 5,
-        height = 5,
+        fontSize = 500,
+        width = 1,
+        height = 1,
         position   = positionLayout["gameSetup"],
-        scale = {x=0.2, y=1, z=0.2},
+        scale = {x=1, y=1, z=1},
         color = {r=0, g=0, b=0, a=0},
         font_color = {r=255, g=255, b=255, a=100},
         })
     
+    -- Add labels near the setting buttons for decorative purposes
+    createGridButton({
+        boardObj = self,
+        clickFunction = "None",
+        label = "GAMEMODE",
+        fontSize = 600,
+        width = 0,
+        height = 0,
+        position   = positionLayout["mode_label"],
+        scale = {x=1, y=1, z=1},
+        color = {r=0, g=0, b=0, a=0},
+        font_color = {r=255, g=255, b=255, a=100},
+        })
+    createGridButton({
+        boardObj = self,
+        clickFunction = "None",
+        label = "SETUP",
+        fontSize = 600,
+        width = 0,
+        height = 0,
+        position   = positionLayout["setup_label"],
+        scale = {x=1, y=1, z=1},
+        color = {r=0, g=0, b=0, a=0},
+        font_color = {r=255, g=255, b=255, a=100},
+        })
+        
     -- Add all created tiles to the XML.
     self.UI.setXmlTable(menuTiles)
 end
@@ -209,7 +242,7 @@ function createXMLButton(args)
     -- We do not use the Y position as all buttons are kept on the same height.
     local placementPosition = {
         x = args.gridPosition.x * btnScale,
-        y = (args.gridPosition.y * 0.1) + 1,
+        y = (args.gridPosition.y * 0.1) + 0,
         z = args.gridPosition.z * btnScale,
     }
 

@@ -42,7 +42,7 @@ end
 
 
 -- VARIABLES
-local btnScale  = 1300
+local btnScale  = 95
 local btnMargin = 5   -- Percentage
 
 local btnSpacing           = (1 + (btnMargin/100)) / 490
@@ -263,17 +263,19 @@ local cladData = {
 -- These are not defined within the characterData table for easier modification and re-use.
 -- We only use X and Z because Y is fixed for all buttons!
 local positionLayout  = {
-    ["Wyrm Clad"]          = {x = -1.0, y = 0, z =  2.4},
-    ["Wyrm Clad (Expert)"] = {x =  0.0, y = 0, z =  2.4},
-    ["Wyrm Clad (Extra)"]  = {x =  1.0, y = 0, z =  2.4},
+    ["Wyrm Clad"]          = {x = -4.0, y = 0, z =  1.6},
+    ["Wyrm Clad (Expert)"] = {x = -3.0, y = 0, z =  1.6},
+    ["Wyrm Clad (Extra)"]  = {x = -2.0, y = 0, z =  1.6},
     
-    ["Shell Clad"]         = {x = -0.5, y = 0, z =  1.2},
-    ["Shell Clad (Extra)"] = {x =  0.5, y = 0, z =  1.2},
+    ["Shell Clad"]         = {x = -3.5, y = 0, z =  0.4},
+    ["Shell Clad (Extra)"] = {x = -2.5, y = 0, z =  0.4},
     
-    ["Hydra Clad"]         = {x =  0.0, y = 0, z =  0.0},
+    ["Hydra Clad"]         = {x = -3.0, y = 0, z = -0.8},
     
-    ["Random_Clad"]        = {x = -0.5, y = 0, z = -1.5},
-    ["Clear_Clad"]         = {x =  0.5, y = 0, z = -1.5},
+    ["Random_Clad"]        = {x = -3.0, y = 0, z = -2.0},
+    
+    ["Label_Clad"]         = {x = -3.0, y = 0.8, z =  3.0},
+    ["Label_Settings"]      = {x =  3.0, y = 0.8, z =  3.0},
 }
 local templateObjects = Global.getTable("templateObjects")
 
@@ -283,6 +285,8 @@ local templateObjects = Global.getTable("templateObjects")
 function onLoad()  
     -- Create the visual layout of buttons.
     generateButtons()
+    -- Create labels at the top of the board.
+    generateLabels()
 end
 
 
@@ -306,7 +310,7 @@ function generateButtons()
 
         local tooltipText = charName
         if character.sourceGame then
-            tooltipText = tooltipText .. "\n(" .. character.sourceGame .. ")"
+            tooltipText = tooltipText .. "\n[D0D0D0](" .. character.sourceGame .. ")[-]"
         end
         table.insert(
             menuTiles,
@@ -331,21 +335,40 @@ function generateButtons()
             tooltip      = "Random Clad",
             })
         )
-    -- Clear selection button
-    table.insert(
-        menuTiles,
-        createXMLButton({
-            boardObj     = self,
-            charSelect   = "Clear",
-            gridPosition = positionLayout["Clear_Clad"],
-            iconImage    = gitLink("Characters/Cancel/Cancel_charSelect.png"),
-            tooltip      = "Clear clad deck"
-            })
-        )
     
     -- Add all created tiles to the XML.
     self.UI.setXmlTable(menuTiles)
 end
+
+-- [→onLoad()]: Sets up the text labels at the top of the board.
+function generateLabels()
+    createGridButton({
+        boardObj = self,
+        clickFunction = "None",
+        label = "Clad Selection",
+        fontSize = 350,
+        width = 0,
+        height = 0,
+        position   = positionLayout["Label_Clad"],
+        scale = {x=0.2, y=1, z=0.2},
+        color = {r=255, g=255, b=255, a=255},
+        font_color = {r=255, g=255, b=255, a=100},
+        })
+        
+    createGridButton({
+        boardObj = self,
+        clickFunction = "None",
+        label = "Game Settings",
+        fontSize = 350,
+        width = 0,
+        height = 0,
+        position   = positionLayout["Label_Settings"],
+        scale = {x=0.2, y=1, z=0.2},
+        color = {r=255, g=255, b=255, a=255},
+        font_color = {r=255, g=255, b=255, a=100},
+        })
+end
+
 -- Creates a TTS Button element and returns an XML table for an image lined up with the button.
 -- We return the element so we can combine the button tables into one table to generate the final XML.
 function createXMLButton(args)
@@ -361,7 +384,7 @@ function createXMLButton(args)
     -- We do not use the Y position as all buttons are kept on the same height.
     local placementPosition = {
         x = args.gridPosition.x * btnScale,
-        y = (args.gridPosition.y * 0.1) + 1,
+        y = (args.gridPosition.y * 0.1) + 0.8,
         z = args.gridPosition.z * btnScale,
     }
 
@@ -416,13 +439,14 @@ function createGridButton(args)
         width          = btnScale * (args.width or 1),
         height         = btnScale * (args.height or 1),
         color          = args.color or {1, 1, 1, 1},
+        font_color     = args.font_color or {r=0, g=0, b=0, a=1},
         position       = {
             x =  (args.position.x or 0) * btnScale * btnSpacing, -- NOT Negative because buttons are exceeding stupid
             y =  (args.position.y or 1),
             z =  (args.position.z or 0) * btnScale * btnSpacing * -1,
         },
         tooltip        = args.tooltip or "",
-        scale          = args.active == false and {x=0, y=0, z=0} or {x=1, y=1, z=1},
+        scale          = args.active == false and {x=0, y=0, z=0} or args.scale or {x=1, y=1, z=1},
     })
 end
 
@@ -435,8 +459,6 @@ function cladSelect(character_ID)
         character_ID = selectRandomClad()
         spawnComponentsClad(character_ID)
         changeCladModel(character_ID)
-    elseif character_ID == "Clear" then
-        removeAllCladOwnedObjects()
     else
         spawnComponentsClad(character_ID)
         changeCladModel(character_ID)
